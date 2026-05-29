@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>full-blocker</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>full-blocker</h1>
+      <span id="count" class="count">0</span>
+    </header>
+
+    <label class="row">
+      <span>Blocking enabled</span>
+      <input type="checkbox" id="enabled" />
+    </label>
+
+    <label class="row">
+      <span id="site-label">Allow this site</span>
+      <input type="checkbox" id="allow-site" />
+    </label>
+
+    <p id="site-host" class="host"></p>
+
+    <section class="blocked">
+      <h2>Blocked on this tab</h2>
+      <ul id="blocked-list" class="blocked-list"></ul>
+      <p id="blocked-empty" class="empty" hidden>
+        Nothing blocked yet on this tab — reload the page to count from the start.
+      </p>
+    </section>
+
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

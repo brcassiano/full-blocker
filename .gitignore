@@ -1,0 +1,16 @@
+node_modules/
+.wxt/
+.output/
+dist/
+*.log
+
+# Generated DNR rulesets (rebuilt via `pnpm run rules`). curated.json is kept.
+src/public/rules/easylist.json
+src/public/rules/easyprivacy.json
+
+# agentmemory local store (not part of the extension)
+data/
+
+# Design docs kept local only (not published)
+PRD.md
+SDD.md

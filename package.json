@@ -1,0 +1,26 @@
+{
+  "name": "full-blocker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Ad/tracker blocker (Chromium MV3) with YouTube ad removal — personal use",
+  "scripts": {
+    "rules": "tsx scripts/build-rules.ts",
+    "postinstall": "wxt prepare",
+    "dev": "wxt",
+    "build": "pnpm run rules && wxt build",
+    "zip": "pnpm run rules && wxt zip",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "compile": "wxt build"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.270",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8",
+    "wxt": "^0.19.13"
+  },
+  "dependencies": {}
+}

@@ -1,0 +1,116 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+body {
+  width: 260px;
+  margin: 0;
+  padding: 12px 14px;
+}
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+h1 {
+  font-size: 15px;
+  margin: 0;
+}
+.count {
+  font-variant-numeric: tabular-nums;
+  background: #d33;
+  color: #fff;
+  border-radius: 10px;
+  padding: 1px 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 13px;
+  border-top: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+}
+.host {
+  margin: 6px 0 0;
+  font-size: 11px;
+  opacity: 0.6;
+  word-break: break-all;
+}
+input[type='checkbox'] {
+  width: 34px;
+  height: 20px;
+  appearance: none;
+  background: #bbb;
+  border-radius: 12px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+input[type='checkbox']:checked {
+  background: #2ea043;
+}
+input[type='checkbox']::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.15s;
+}
+input[type='checkbox']:checked::after {
+  transform: translateX(14px);
+}
+
+.blocked {
+  margin-top: 12px;
+  border-top: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  padding-top: 8px;
+}
+.blocked h2 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.6;
+  margin: 0 0 6px;
+}
+.blocked-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  font-size: 12px;
+}
+.blocked-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 0;
+}
+.blocked-list .label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.blocked-list .n {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  border-radius: 8px;
+  padding: 0 7px;
+  font-size: 11px;
+}
+.empty {
+  font-size: 11px;
+  opacity: 0.6;
+  margin: 4px 0 0;
+}
