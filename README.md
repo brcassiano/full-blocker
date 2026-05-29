@@ -23,6 +23,94 @@ the anti-adblock wall**. Personal use, loaded as an unpacked extension.
 > network level there — ads are removed client-side. On other sites the count
 > reflects real network blocking.
 
+## Architecture
+
+Clean-ish layering: a **pure, testable domain** (`src/core`, no `chrome.*`), a
+small **ports** layer (`src/shared`), and **adapters** (`src/entrypoints`) that
+wire the domain to the browser APIs. Static DNR rulesets are produced at build
+time from filter lists.
+
+```mermaid
+flowchart TB
+  subgraph build["Build time"]
+    BR["scripts/build-rules.ts"]
+    FIL["core/filters/abp-to-dnr"]
+    BR --> FIL --> RULES[("src/public/rules/*.json<br/>static DNR rulesets")]
+  end
+
+  subgraph ext["Runtime — Chromium MV3"]
+    POP["popup<br/>toggle · allowlist · stats"]
+    SW["background<br/>service worker"]
+    CS1["content.ts<br/>cosmetic — all sites"]
+    CS2["youtube.content.ts<br/>skip/seek/mute · ISOLATED"]
+    CS3["youtube-main.content.ts<br/>strip ads · MAIN world"]
+    DNR[("declarativeNetRequest<br/>static + dynamic rules")]
+  end
+
+  subgraph core["src/core — pure & unit-tested"]
+    YT["youtube/ad-state<br/>youtube/strip-ads"]
+    BL["blocking/allowlist<br/>blocking/stats"]
+    COS["cosmetic/rules"]
+  end
+
+  SHARED["src/shared<br/>settings · storage (port) · messages"]
+
+  RULES -. bundled .-> DNR
+  POP <--> SW
+  SW --> DNR
+  SW --> BL
+  POP --> SHARED
+  SW --> SHARED
+  CS1 --> COS
+  CS2 --> YT
+  CS3 --> YT
+```
+
+### Why YouTube needs a different strategy
+
+DNR can't block YouTube video ads (same domains as the video), and blocking
+*anything* on YouTube trips the anti-adblock wall. So we let all YouTube requests
+through and strip ads from the player response before the player reads them.
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant P as YouTube page
+  participant M as MAIN-world hook<br/>(youtube-main)
+  participant N as DNR
+  participant U as User
+
+  Note over N: allow rule on youtube.com<br/>→ nothing blocked → no wall
+  P->>P: fetch /youtubei/v1/player
+  P->>M: Response.json() / JSON.parse()
+  M->>M: stripPlayerResponseAds()<br/>drop adPlacements, playerAds, adSlots…
+  M-->>P: player response with no ads
+  P->>U: video plays — no ad, no wall
+```
+
+### Request handling on a normal site
+
+```mermaid
+flowchart LR
+  R(["request"]) --> A{site allowlisted?}
+  A -- yes --> PASS["allow<br/>(dynamic rule)"]
+  A -- no --> B{matches EasyList /<br/>EasyPrivacy / curated?}
+  B -- yes --> BLK["block + count"]
+  B -- no --> PASS2["allow"]
+  PASS2 --> COSM["cosmetic CSS hides<br/>leftover banners"]
+```
+
+### Settings (persisted via `chrome.storage`)
+
+```ts
+type Settings = {
+  enabled: boolean            // global on/off
+  allowlist: string[]         // registrable domains exempt from blocking
+  youtube: { enabled: boolean }
+  cosmetic: { enabled: boolean }
+}
+```
+
 ## Requirements
 - Node 24 (via fnm — see `.node-version`) and pnpm (`corepack pnpm`).
 
