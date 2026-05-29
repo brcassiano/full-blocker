@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Ad/tracker blocker (Chromium MV3) with YouTube ad removal — personal use",
+  "license": "MIT",
   "scripts": {
     "rules": "tsx scripts/build-rules.ts",
     "postinstall": "wxt prepare",
