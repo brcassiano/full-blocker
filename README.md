@@ -1,27 +1,29 @@
 # full-blocker
 
 Ad, banner and tracker blocker for **Chromium** (Chrome / Brave / Edge),
-Manifest V3 — with a special focus on **removing YouTube ads without triggering
+Manifest V3 — with a special focus on **handling YouTube ads without triggering
 the anti-adblock wall**. Personal use, loaded as an unpacked extension.
 
 ## How it works (overview)
 - **Network** (`declarativeNetRequest`): rulesets generated from EasyList +
   EasyPrivacy plus a curated ruleset. Blocks ad/tracker requests on every site.
-- **YouTube** (content scripts): DNR cannot block YouTube ads (they come from the
-  same domains as the video), and blocking requests there triggers the
-  "ad blockers violate ToS" wall. So instead we **(a)** keep DNR from blocking
-  anything on YouTube and **(b)** strip the ad descriptors from the player
-  response in the page's MAIN world before the player reads them — same approach
-  uBlock Origin uses. A second content script also auto-skips/seeks/mutes ads and
-  hides overlay/banner ads. The ad-decision logic lives in
-  `src/core/youtube/` and is fully unit-tested.
-- **Cosmetic** (content script): CSS that hides common ad containers/banners.
+- **YouTube** (content script): DNR cannot block YouTube ads (they come from the
+  same domains as the video), and YouTube's anti-adblock detects *any* attempt to
+  make ads not exist — both blocking/removing them **and** hiding their containers
+  with CSS trip the "ad blockers violate ToS" wall (after which the server 403s
+  every `videoplayback` request). So on YouTube we deliberately **(a)** keep DNR
+  from blocking anything, **(b)** inject no ad-hiding CSS, and **(c)** let the ad
+  load and play, then auto **skip / fast-forward / mute** it. YouTube only sees a
+  very fast "skip" click, which it does not treat as ad blocking. The ad-decision
+  logic lives in `src/core/youtube/ad-state.ts` and is fully unit-tested.
+- **Cosmetic** (content script): CSS that hides common ad containers/banners on
+  all sites **except YouTube** (see above).
 - **Popup**: global on/off, per-site allowlist, and a per-tab breakdown of what
   was blocked (with a count badge on the toolbar icon).
 
 > On YouTube the blocked count is intentionally **0**: nothing is blocked at the
-> network level there — ads are removed client-side. On other sites the count
-> reflects real network blocking.
+> network level there — video ads are skipped client-side. On other sites the
+> count reflects real network blocking.
 
 ## Architecture
 
@@ -41,14 +43,13 @@ flowchart TB
   subgraph ext["Runtime — Chromium MV3"]
     POP["popup<br/>toggle · allowlist · stats"]
     SW["background<br/>service worker"]
-    CS1["content.ts<br/>cosmetic — all sites"]
+    CS1["content.ts<br/>cosmetic — all sites except YouTube"]
     CS2["youtube.content.ts<br/>skip/seek/mute · ISOLATED"]
-    CS3["youtube-main.content.ts<br/>strip ads · MAIN world"]
     DNR[("declarativeNetRequest<br/>static + dynamic rules")]
   end
 
   subgraph core["src/core — pure & unit-tested"]
-    YT["youtube/ad-state<br/>youtube/strip-ads"]
+    YT["youtube/ad-state"]
     BL["blocking/allowlist<br/>blocking/stats"]
     COS["cosmetic/rules"]
   end
@@ -63,29 +64,30 @@ flowchart TB
   SW --> SHARED
   CS1 --> COS
   CS2 --> YT
-  CS3 --> YT
 ```
 
 ### Why YouTube needs a different strategy
 
-DNR can't block YouTube video ads (same domains as the video), and blocking
-*anything* on YouTube trips the anti-adblock wall. So we let all YouTube requests
-through and strip ads from the player response before the player reads them.
+DNR can't block YouTube video ads (same domains as the video), and YouTube's
+anti-adblock trips its wall on *any* sign that ads were removed — blocking
+requests, stripping the player response, or hiding ad containers with CSS all
+get detected (the server then 403s every `videoplayback` request). The only
+approach that survives is to let the ad play and **skip/fast-forward** it.
 
 ```mermaid
 sequenceDiagram
   autonumber
   participant P as YouTube page
-  participant M as MAIN-world hook<br/>(youtube-main)
+  participant C as youtube.content.ts<br/>(ISOLATED, skip/seek)
   participant N as DNR
   participant U as User
 
   Note over N: allow rule on youtube.com<br/>→ nothing blocked → no wall
-  P->>P: fetch /youtubei/v1/player
-  P->>M: Response.json() / JSON.parse()
-  M->>M: stripPlayerResponseAds()<br/>drop adPlacements, playerAds, adSlots…
-  M-->>P: player response with no ads
-  P->>U: video plays — no ad, no wall
+  Note over P: no player-response strip,<br/>no ad-hiding CSS → no wall
+  P->>U: ad starts playing
+  C->>C: mute + click "Skip", or seek<br/>unskippable ad to its end
+  C-->>P: ad ends/skipped
+  P->>U: real video plays — no wall
 ```
 
 ### Request handling on a normal site

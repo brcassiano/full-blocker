@@ -17,6 +17,10 @@ export default defineContentScript({
     const settings = await getSettings();
     if (!settings.enabled || !settings.cosmetic.enabled) return;
     if (isAllowlisted(location.hostname, settings.allowlist)) return;
+    // Never inject ad-hiding CSS on YouTube: any display:none on ad containers
+    // trips YouTube's anti-adblock wall. YouTube ads are handled by skip/seek in
+    // youtube.content.ts instead. See the note there for the full rationale.
+    if (/(^|\.)youtube\.com$/.test(location.hostname)) return;
 
     const style = document.createElement('style');
     style.id = 'full-blocker-cosmetic';
